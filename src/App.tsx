@@ -1,127 +1,76 @@
+import { useState } from "react";
+import { StoreProvider, useStore } from "./domain/store";
+import { HorsesTab } from "./components/HorsesTab";
+import { RecordsTab } from "./components/RecordsTab";
+import { VetTab } from "./components/VetTab";
+import { ReviewTab } from "./components/ReviewTab";
+import { MergeTab } from "./components/MergeTab";
+import { HistoryTab } from "./components/HistoryTab";
 import "./styles.css";
 
-const project = {
-  "sourceNo": 6,
-  "id": "hxyfront-62011",
-  "port": 62011,
-  "title": "马术蹄铁修整档案",
-  "domain": "马术蹄铁",
-  "prompt": "做一个面向马术俱乐部蹄铁师的修蹄记录前端项目，可以记录马匹编号、步态问题、蹄形评估、蹄铁类型、钉位、修蹄日期、下次复查日期和照片备注。页面需要有马匹列表、复查提醒、左右前后蹄对比记录、异常步态标记和蹄铁更换历史。",
-  "palette": [
-    "#78350f",
-    "#166534",
-    "#2563eb"
-  ],
-  "metrics": [
-    "待复查",
-    "异常步态",
-    "更换蹄铁",
-    "马匹档案"
-  ],
-  "filters": [
-    "前蹄",
-    "后蹄",
-    "运动马",
-    "休养马"
-  ],
-  "fields": [
-    "马匹编号",
-    "步态问题",
-    "蹄形评估",
-    "蹄铁类型",
-    "钉位",
-    "下次复查"
-  ],
-  "records": [
-    [
-      "HORSE-18",
-      "右前蹄外侧磨耗",
-      "铝蹄铁",
-      "14天后复查"
-    ],
-    [
-      "HORSE-27",
-      "后蹄裂纹",
-      "加护蹄垫",
-      "拍照归档"
-    ],
-    [
-      "HORSE-31",
-      "步态轻微不稳",
-      "需教练复核",
-      "已标记"
-    ]
-  ]
-};
+const TABS = [
+  { key: "horses", label: "马匹档案" },
+  { key: "records", label: "修蹄记录" },
+  { key: "vet", label: "兽医审核" },
+  { key: "review", label: "复查计划" },
+  { key: "merge", label: "合并中心" },
+  { key: "history", label: "蹄铁历史" },
+] as const;
 
-function App() {
+type TabKey = (typeof TABS)[number]["key"];
+
+function Shell() {
+  const [tab, setTab] = useState<TabKey>("horses");
+  const { state, setOnline, reset } = useStore();
+
   return (
     <main className="app">
       <section className="hero">
-        <p>{project.id} · 源提示词{project.sourceNo} · Port {project.port}</p>
-        <h1>{project.title}</h1>
-        <span>{project.prompt}</span>
+        <p>hxyfront-62011 · 马术蹄铁修整档案 · 离线协作</p>
+        <h1>蹄铁修整离线协作台</h1>
+        <span>
+          蹄铁师在场边断网登记四蹄蹄形、蹄铁与钉位，兽医在诊室审核蹄病并签字确认疼痛评分；回网后按记录号合并，两边改同一蹄位时保留兽医安全值，另一版待处理。未处置不生成复查通知，档案或复查日期变化后已签意见和通知立即失效重算。
+        </span>
+        <div className="hero-actions">
+          <span className={"online-pill " + (state.online ? "on" : "off")}>
+            {state.online ? "● 回网在线" : "○ 断网离线"}
+          </span>
+          <button onClick={() => setOnline(!state.online)}>
+            {state.online ? "切换为断网" : "切换为回网"}
+          </button>
+          <button onClick={reset}>重置演示数据</button>
+        </div>
       </section>
 
-      <section className="metrics">
-        {project.metrics.map((metric: string, index: number) => (
-          <article key={metric}>
-            <small>{metric}</small>
-            <strong>{[28, 6, 14, 91][index] ?? 10}</strong>
-          </article>
+      <nav className="tabs">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            className={"tab-btn " + (tab === t.key ? "active" : "")}
+            onClick={() => setTab(t.key)}
+          >
+            {t.label}
+          </button>
         ))}
-      </section>
+      </nav>
 
-      <section className="workspace">
-        <aside className="panel">
-          <h2>{project.domain}分类</h2>
-          <div className="chips">
-            {project.filters.map((item: string) => (
-              <button key={item}>{item}</button>
-            ))}
-          </div>
-        </aside>
-
-        <section className="panel form-panel">
-          <div className="heading">
-            <div>
-              <p>专业字段</p>
-              <h2>新增记录</h2>
-            </div>
-            <button className="primary">保存记录</button>
-          </div>
-          <div className="field-grid">
-            {project.fields.map((field: string) => (
-              <label key={field}>
-                <span>{field}</span>
-                <input placeholder={"填写" + field} />
-              </label>
-            ))}
-          </div>
-        </section>
-      </section>
-
-      <section className="panel">
-        <div className="heading">
-          <div>
-            <p>近期记录</p>
-            <h2>工作台摘要</h2>
-          </div>
-          <button>导出CSV</button>
-        </div>
-        <div className="records">
-          {project.records.map((record: string[], index: number) => (
-            <article key={record.join("-")}>
-              <b>{String(index + 1).padStart(2, "0")}</b>
-              <div>
-                <h3>{record[0]}</h3>
-                <p>{record.slice(1).join(" · ")}</p>
-              </div>
-            </article>
-          ))}
-        </div>
+      <section className="tab-content">
+        {tab === "horses" && <HorsesTab />}
+        {tab === "records" && <RecordsTab />}
+        {tab === "vet" && <VetTab />}
+        {tab === "review" && <ReviewTab />}
+        {tab === "merge" && <MergeTab />}
+        {tab === "history" && <HistoryTab />}
       </section>
     </main>
+  );
+}
+
+function App() {
+  return (
+    <StoreProvider>
+      <Shell />
+    </StoreProvider>
   );
 }
 
